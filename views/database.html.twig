@@ -1,0 +1,196 @@
+{% extends app.request.isXmlHttpRequest ? '@WebProfiler/Profiler/ajax_layout.html.twig' : '@WebProfiler/Profiler/layout.html.twig' %}
+
+{% block toolbar %}
+    {% set icon %}
+        <img width="20" height="28" alt="Database" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAcCAYAAABh2p9gAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQRJREFUeNpi/P//PwM1ARMDlcGogZQDlpMnT7pxc3NbA9nhQKxOpL5rQLwJiPeBsI6Ozl+YBOOOHTv+AOllQNwtLS39F2owKYZ/gRq8G4i3ggxEToggWzvc3d2Pk+1lNL4fFAs6ODi8JzdS7mMRVyDVoAMHDsANdAPiOCC+jCQvQKqBQB/BDbwBxK5AHA3E/kB8nKJkA8TMQBwLxaBIKQbi70AvTADSBiSadwFXpCikpKQU8PDwkGTaly9fHFigkaKIJid4584dkiMFFI6jkTJII0WVmpHCAixZQEXWYhDeuXMnyLsVlEQKI45qFBQZ8eRECi4DBaAlDqle/8A48ip6gAADANdQY88Uc0oGAAAAAElFTkSuQmCC">
+        <span class="sf-toolbar-status{% if collector.queryCount < 10 %} sf-toolbar-status-green{% endif %}{% if 50 < collector.queryCount %} sf-toolbar-status-yellow{% endif %}">{{ collector.queryCount }}</span>
+        {% if collector.queryCount > 0 %}
+            <span class="sf-toolbar-info-piece-additional-detail">in {{ '%0.2f'|format(collector.queryTime) }} ms</span>
+        {% endif %}
+    {% endset %}
+    {% set text %}
+        <div class="sf-toolbar-info-piece">
+            <b>Connections</b>
+            <span><abbr title="Connections utilised / Connections made">{{ collector.activeConnectionCount }} / {{ collector.connectionCount }}</abbr></span>
+        </div>
+        <div class="sf-toolbar-info-piece">
+            <b>Queries</b>
+            <span>{{ collector.queryCount }}</span>
+        </div>
+        <div class="sf-toolbar-info-piece">
+            <b>Query time</b>
+            <span>{{ '%0.2f'|format(collector.queryTime) }} ms</span>
+        </div>
+    {% endset %}
+    {% include '@WebProfiler/Profiler/toolbar_item.html.twig' with { 'link': profiler_url } %}
+{% endblock %}
+
+{% block menu %}
+    <span class="label" width="200">
+        <span class="icon"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAcCAYAAAB/E6/TAAABLUlEQVR42u3TP0vDQBiA8UK/gDiLzi0IhU4OEunk5OQUAhGSOBUCzqWfIKSzX8DRySF0URCcMjWLIJjFD9Cpk/D6HITecEPUuzhIAz8CIdyTP/f2iqI4qaqqDx8l5Ic2uIeP/bquezCokOAFF+oCN3t4gPzSEjc4NEPaCldQbzjELTYW0RJzHDchwwem+ons6ZBpLSJ7nueJC22h0V+FzmwWV0ee59vQNV67CGVZJmEYbkNjfpY6X6I0Qo4/3RMmTdDDspuQVsJvgkP3IdMbIkIjLPBoadG2646iKJI0Ta2wxm6OdnP0/Tk6DYJgHcfxpw21RtscDTDDnaVZ26474GkkSRIrrPEv5sgMTfHe+cA2O6wPH6vOBpYQNALneHb96XTEDI6dzpEZ0VzO0Rf3pP5LMLI4tAAAAABJRU5ErkJggg==" alt=""></span>
+        <strong>Database</strong>
+        <span class="count">
+            <span>{{ collector.querycount }}</span>
+            <span>{{ '%0.0f'|format(collector.queryTime) }} ms</span>
+        </span>
+    </span>
+{% endblock %}
+
+{% block panel %}
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css" rel="stylesheet">
+    <h2>Queries</h2>
+    <ul>
+        {% for connection, queries in collector.queries %}
+            <li><strong>Connection:</strong> {{ connection }}</li>
+            <li>
+                {% if queries is empty %}
+                    <p><em>No queries were made on this connnection.</em></p>
+                {% else %}
+                    <table class="alt" id="queriesPlaceholder-{{ loop.index }}">
+                        <thead>
+                            <tr>
+                                <th onclick="javascript:sortTable(this, 0, 'queries-{{ loop.index }}')" data-sort-direction="-1" style="cursor: pointer;">#<span>&#9650;</span></th>
+                                <th onclick="javascript:sortTable(this, 1, 'queries-{{ loop.index }}')" style="cursor: pointer;">Time<span></span></th>
+                                <th>Actions</th>
+                                <th style="width: 100%;">Info</th>
+                            </tr>
+                        </thead>
+                        <tbody id="queries-{{ loop.index }}">
+                            {% for i, query in queries %}
+                                <tr class="{{ cycle(['odd', 'even'], i) }}" data-layout="compacted" data-view="separated" id="container-{{ loop.parent.loop.index }}-{{ i }}" >
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ '%0.2f'|format(query.time) }}&nbsp;ms</td>
+                                    <td class="actions">
+                                        <span>
+                                            <i class="fa fa-plus db-block db-compacted" title="Expand query" onclick="return toggleLayout('expanded', '{{ loop.parent.loop.index }}-{{ i }}');" style="cursor: pointer;"></i>
+                                            <i class="fa fa-minus db-block db-expanded" title="Compact query" onclick="return toggleLayout('compacted', '{{ loop.parent.loop.index }}-{{ i }}');" style="cursor: pointer; display: none;"></i>
+                                        </span>
+                                        <span>
+                                            <i class="fa fa-play db-block db-separated" onclick="return toggleView('runnable', '{{ loop.parent.loop.index }}-{{ i }}');" title="Show runnable query"></i>
+                                            <i class="fa fa-stop db-block db-runnable" onclick="return toggleView('separated', '{{ loop.parent.loop.index }}-{{ i }}');" style="display: none;" title="Show separated query"></i>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="db-block db-separated">
+                                            <pre class="db-block db-compacted"><code>{{ query.query|doctrine_minify_query|raw }}</code></pre>
+                                            <pre class="db-block db-expanded" style="display: none;"><code>{{ query.query|doctrine_pretty_query(false)|raw }}</code></pre>
+                                            <div class="parameters" id="parameters-{{ loop.parent.loop.index }}-{{ i }}"><strong>Parameters</strong>: {{ query.bindings|yaml_encode }} <br></div>
+                                        </div>
+                                        <div class="db-block db-runnable" style="display: none;">
+                                            <pre class="db-block db-compacted"><code>{{ query.query|doctrine_replace_query_parameters(query.bindings)|raw }}</code>
+                                            </pre>
+                                            <pre class="db-block db-expanded"><code>{{ query.query|pretty_replace_query_parameters(query.bindings, false)|raw }}</code></pre>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/googlecode.min.css">
+    <style>
+        .actions
+        {
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .actions span
+        {
+            display: inline-block;
+            text-align: center;
+            width: 18px;
+        }
+
+        .fa
+        {
+            font-size: 13px;
+        }
+
+        .hljs-operator
+        {
+            font-weight: normal;
+            text-transform: lowercase;
+        }
+
+        .parameters
+        {
+            font-size: smaller;
+            padding: 1.5em 0.5em 0.5em 0.5em;
+        }
+
+        pre code
+        {
+            font-size: 13px;
+        }
+    </style>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/highlight.min.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">//<![CDATA[
+        function sortTable(header, column, targetId)
+        {
+            "use strict";
+
+            var direction = parseInt(header.getAttribute('data-sort-direction')) || 1,
+                items = [],
+                target = document.getElementById(targetId),
+                rows = target.children,
+                headers = header.parentElement.children,
+                i;
+
+            for (i = 0; i < rows.length; ++i) items.push(rows[i]);
+
+            for (i = 0; i < headers.length; ++i)
+            {
+                headers[i].removeAttribute('data-sort-direction');
+                if (headers[i].children.length > 0) headers[i].children[0].innerHTML = '';
+            }
+
+            header.setAttribute('data-sort-direction', (-1*direction).toString());
+            header.children[0].innerHTML = direction > 0 ? '&#9650;' : '&#9660;';
+
+            items.sort(function(a, b)
+            {
+                return direction*(parseFloat(a.children[column].innerHTML) - parseFloat(b.children[column].innerHTML));
+            });
+
+            for (i = 0; i < items.length; ++i)
+            {
+                Sfjs.removeClass(items[i], i % 2 ? 'even' : 'odd');
+                Sfjs.addClass(items[i], i % 2 ? 'odd' : 'even');
+                target.appendChild(items[i]);
+            }
+        }
+
+        function toggleLayout(layout, id)
+        {
+            var container = document.getElementById('container-' + id);
+
+            container.setAttribute('data-layout', layout);
+            updateVisible(container);
+        }
+
+        function toggleView(view, id)
+        {
+            var container = document.getElementById('container-' + id);
+
+            container.setAttribute('data-view', view);
+            updateVisible(container);
+        }
+
+        function updateVisible(container)
+        {
+            blocks = container.getElementsByClassName('db-block');
+            for (i = 0; i < blocks.length; i++) blocks[i].style.display = 'none';
+
+            layout = container.getElementsByClassName('db-' + container.getAttribute('data-layout'));
+            for (i = 0; i < layout.length; i++) layout[i].style.display = 'inline';
+
+            view = container.getElementsByClassName('db-' + container.getAttribute('data-view'));
+            for (i = 0; i < view.length; i++) view[i].style.display = 'inline';
+        }
+    //]]></script>
+{% endblock %}

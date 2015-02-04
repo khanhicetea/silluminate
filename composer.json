@@ -1,0 +1,41 @@
+{
+    "name": "sjdaws/silluminate",
+    "description": "Laravel Illuminate Database adapter for Silex 1.0+",
+    "version": "1.0.0",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Scott Dawson",
+            "email": "scott@uu.net.nz"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0",
+        "illuminate/database": "~5.0",
+        "jdorn/sql-formatter": "~1.2",
+        "monolog/monolog": "~1.11",
+        "silex/silex": "~1.0",
+        "silex/web-profiler": "~1.0",
+        "symfony/yaml": "~2.3"
+    },
+    "require-dev": {
+
+    },
+    "suggest": {
+        "illuminate/events": "Provides event listeners"
+    },
+    "support": {
+        "issues": "https://github.com/sjdaws/silluminate/issues",
+        "source": "https://github.com/sjdaws/silluminate"
+    },
+    "autoload": {
+        "psr-0": {
+            "Sjdaws\\Silluminate": "src/"
+        },
+        "psr-4": {
+            "Sjdaws\\Silluminate\\": "src/"
+        }
+    },
+    "minimum-stability": "dev"
+}
